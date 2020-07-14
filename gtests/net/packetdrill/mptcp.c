@@ -816,25 +816,16 @@ static int mp_join_syn_ack(struct packet *packet_to_modify,
 		subflow->kernel_rand_nbr =
 				ntohl(live_mp_join->data.mp_join.syn.ack.sender_random_number);
 
-		//Build key for HMAC-SHA1
-		unsigned char hmac_key[16];
-		unsigned long *key_b = (unsigned long*)hmac_key;
-		unsigned long *key_a = (unsigned long*)&(hmac_key[8]);
-		*key_b = mp_state.kernel_key;
-		*key_a = mp_state.packetdrill_key;
-
-		//Build message for HMAC-SHA1
-		unsigned msg[2];
-		msg[0] = subflow->kernel_rand_nbr;
-		msg[1] = subflow->packetdrill_rand_nbr;
-
 		//Update script packet mp_join option fields
 		tcp_opt_to_modify->data.mp_join.syn.address_id =
 				live_mp_join->data.mp_join.syn.address_id;
 		tcp_opt_to_modify->data.mp_join.syn.ack.sender_random_number =
 				live_mp_join->data.mp_join.syn.ack.sender_random_number;
-		tcp_opt_to_modify->data.mp_join.syn.ack.sender_hmac =
-				hmac_sha1_truncat_64(hmac_key, 16, (u8*)msg, 8);
+		mp_join_syn_ack_sender_hmac(tcp_opt_to_modify,
+					    mp_state.kernel_key,
+					    mp_state.packetdrill_key,
+					    subflow->kernel_rand_nbr,
+					    subflow->packetdrill_rand_nbr);
 	}
 	return STATUS_OK;
 }
