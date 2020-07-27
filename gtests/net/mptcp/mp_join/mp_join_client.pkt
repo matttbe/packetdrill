@@ -25,5 +25,5 @@
 +0.0 < . 1:1(0) ack 1 win 256 <nop,nop,TS val 448955294 ecr 448955294>
 
 +1.0 close(3) = 0
-+0.0 > addr[caddr0] > addr[saddr0] F. 3:3(0) ack 1 <nop,nop,TS val 4074418292 ecr 4074418293,dss dack4=1 dsn8=3 ssn=0 dll=1 nocs fin,nop,nop>
++0.0 > addr[caddr0] > addr[saddr0] F. 3:3(0) ack 1 <nop,nop,TS val 4074418292 ecr 4074418293>
 +0.0 > > addr[saddr1] F. 1:1(0) ack 1 <nop,nop,TS val 448955294 ecr 448955294>
