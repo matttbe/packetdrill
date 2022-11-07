@@ -1,5 +1,5 @@
 // connection initiated by the kernel
---tolerance_usecs=200000
+--tolerance_usecs=250000
 `../common/defaults.sh`
 
 +0     `../common/client.sh`
