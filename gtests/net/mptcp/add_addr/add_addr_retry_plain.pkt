@@ -1,5 +1,5 @@
 // connection initiated by packetdrill
---tolerance_usecs=200000
+--tolerance_usecs=250000
 `../common/defaults.sh`
 
 +0     `sysctl -wq net.mptcp.add_addr_timeout=1`
