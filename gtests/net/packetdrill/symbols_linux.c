@@ -110,6 +110,7 @@ struct int_symbol platform_symbols_table[] = {
 	{ SOF_TIMESTAMPING_OPT_CMSG,	    "SOF_TIMESTAMPING_OPT_CMSG"       },
 	{ SOF_TIMESTAMPING_OPT_TSONLY,	    "SOF_TIMESTAMPING_OPT_TSONLY"     },
 	{ SOF_TIMESTAMPING_OPT_STATS,	    "SOF_TIMESTAMPING_OPT_STATS"      },
+	{ SOF_TIMESTAMPING_OPT_ID_TCP,	    "SOF_TIMESTAMPING_OPT_ID_TCP"     },
 
 	{ SCM_TIMESTAMPING,		    "SCM_TIMESTAMPING"		      },
 	{ SCM_TSTAMP_SND,		    "SCM_TSTAMP_SND"		      },
@@ -194,6 +195,7 @@ struct int_symbol platform_symbols_table[] = {
 	{ TCP_INQ,			    "TCP_INQ"			      },
 
 	{ TCP_CM_INQ,			    "TCP_CM_INQ"		      },
+	{ TCP_TX_DELAY,			    "TCP_TX_DELAY"		      },
 
 	{ O_RDONLY,                         "O_RDONLY"                        },
 	{ O_WRONLY,                         "O_WRONLY"                        },
