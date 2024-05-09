@@ -71,6 +71,8 @@
 
 #define TCP_TX_DELAY		 37
 
+#define TCP_IS_MPTCP		 43
+
 /* TODO: remove these when netinet/tcp.h has them */
 #ifndef TCPI_OPT_ECN_SEEN
 #define TCPI_OPT_ECN_SEEN	16 /* received at least one packet with ECT */

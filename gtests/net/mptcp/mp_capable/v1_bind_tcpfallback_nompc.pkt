@@ -4,6 +4,7 @@
 
 +0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
 +0     setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0     getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
 
 +0     `nstat -n`
 +0     bind(3, ..., ...) = 0
@@ -16,6 +17,10 @@
 //  test mibs
 +0.01  `test $(nstat -zjs | jq '.kernel.MPTcpExtMPCapableSYNRX') -eq 0`
 +0     `test $(nstat -zjs | jq '.kernel.MPTcpExtMPCapableFallbackACK') -eq 0`
+
+// Check for fallback
++0     getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
++0     getsockopt(4, SOL_TCP, TCP_IS_MPTCP, [0], [4]) = 0
 
 // ensure that traffic plane is functional and does not use DSS
 +0     write(4, ..., 1000) = 1000
