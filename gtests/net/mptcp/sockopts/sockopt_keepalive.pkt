@@ -1,0 +1,46 @@
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
+0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0   setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+
++0   getsockopt(3, SOL_SOCKET, SO_KEEPALIVE, [0], [4]) = 0
++0   setsockopt(3, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
++0   getsockopt(3, SOL_SOCKET, SO_KEEPALIVE, [1], [4]) = 0
+
++0   getsockopt(3, SOL_TCP, TCP_KEEPIDLE, [7200], [4]) = 0
++0   setsockopt(3, SOL_TCP, TCP_KEEPIDLE, [1], 4) = 0
++0   getsockopt(3, SOL_TCP, TCP_KEEPIDLE, [1], [4]) = 0
+
++0   getsockopt(3, SOL_TCP, TCP_KEEPINTVL, [75], [4]) = 0
++0   setsockopt(3, SOL_TCP, TCP_KEEPINTVL, [1], 4) = 0
++0   getsockopt(3, SOL_TCP, TCP_KEEPINTVL, [1], [4]) = 0
+
++0   getsockopt(3, SOL_TCP, TCP_KEEPCNT, [9], [4]) = 0
++0   setsockopt(3, SOL_TCP, TCP_KEEPCNT, [1], 4) = 0
++0   getsockopt(3, SOL_TCP, TCP_KEEPCNT, [1], [4]) = 0
+
++0   bind(3, ..., ...) = 0
++0   listen(3, 1) = 0
+
++0     <  S   0:0(0)         win 8000  <mss 1024, sackOK, nop, nop, nop, wscale 0, mpcapable v1 flags[flag_h] nokey>
++0     >  S.  0:0(0)  ack 1            <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
++0.01  <   .  1:1(0)  ack 1  win 8000                                             <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0   accept(3, ..., ...) = 4
+
+// Check the different Keep-Alive options were synced from listener
++0   getsockopt(4, SOL_SOCKET, SO_KEEPALIVE, [1], [4]) = 0
++0   getsockopt(4, SOL_TCP, TCP_KEEPIDLE, [1], [4]) = 0
++0   getsockopt(4, SOL_TCP, TCP_KEEPINTVL, [1], [4]) = 0
++0   getsockopt(4, SOL_TCP, TCP_KEEPCNT, [1], [4]) = 0
+
++0   write(4, ..., 100) = 100
+
++0     >  P.  1:101(100)  ack 1             <dss dack4=1   dsn8=1 ssn=1 dll=100 nocs, nop, nop>
++0.01  <   .  1:1(0)      ack 101  win 256  <dss dack4=101 nocs>
+
++1     >   .  100:100(0)  ack 1             <dss dack4=1   nocs>
++1     >  R.  101:101(0)  ack 1             <mp_reset 0>
+
+
+// TODO: check if the connection is down
