@@ -4,6 +4,7 @@
 
 0.0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
 +0.0    setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0    getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
 +0.0    fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
 +0.0    fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
 
@@ -16,6 +17,9 @@
 
 +0.200  getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
 +0.200  fcntl(3, F_SETFL, O_RDWR) = 0   // set back to blocking
+
+// Check for fallback
++0.0    getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [0], [4]) = 0
 
 // ensure that traffic plane is functional and does not use DSS
 
