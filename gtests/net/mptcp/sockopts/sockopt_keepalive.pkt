@@ -41,6 +41,3 @@
 
 +1     >   .  100:100(0)  ack 1             <dss dack4=1   nocs>
 +1     >  R.  101:101(0)  ack 1             <mp_reset 0>
-
-
-// TODO: check if the connection is down
