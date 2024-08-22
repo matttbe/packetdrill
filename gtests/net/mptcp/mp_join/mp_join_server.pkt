@@ -30,7 +30,8 @@
 
 // close subflow subflow, expect a FIN in reply
 +0.0    <                               F.  1:1(0)  ack 1  win 256    <nop, nop,         TS val 448955294 ecr 448955294,                dss dack8=1 nocs>
-+0.0    >                               F.  1:1(0)  ack 2             <nop, nop,         TS val 448955294 ecr 448955294,                dss dack8=3 nocs>
+// the FIN will be triggered by the MPTCP worker, which can be "too slow" to react, and the kernel might send a dedicated ACK first, then a FIN+ACK. Hard to validate this with packetdrill.
+// +0.0 >                               F.  1:1(0)  ack 2             <nop, nop,         TS val 448955294 ecr 448955294,                dss dack8=3 nocs>
 
 // close connection
 +0.0    <  addr[caddr0] > addr[saddr0]  F.  3:3(0)  ack 1  win 256    <nop, nop,         TS val 4074418292 ecr 4074418293,                dss dack4=1 dsn8=3 ssn=0 dll=1 nocs fin, nop, nop>
