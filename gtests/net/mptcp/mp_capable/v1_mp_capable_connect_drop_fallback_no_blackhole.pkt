@@ -1,0 +1,54 @@
+--tolerance_usecs=100000
+`../common/defaults.sh
+sysctl -q net.mptcp.syn_retrans_before_tcp_fallback=0`
+
+0.0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0    setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0    getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
++0.0    fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0    fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
+// Establish connection and verify that there is a fallback to TCP.
+
++0     `nstat -n`
++0.0    connect(3, ..., ...) = -1  EINPROGRESS (Operation now in progress)
++0.0      >  S   0:0(0)                    <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
+
+// The first SYN without MPTCP doesn't get any reply
++1.0      >  S   0:0(0)                    <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8>
+
+// The second one does: so it should not be detected as an MPTCP blackhole
++1.0      >  S   0:0(0)                    <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8>
++0.01     <  S.  0:0(0)  ack 1  win 65535  <mss 1460, sackOK, TS val 700 ecr 100, nop, wscale 8>
++0.0      >   .  1:1(0)  ack 1             <nop, nop,         TS val 100 ecr 700>
+
++0.200  getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+
+// Check for fallback
++0.0    getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [0], [4]) = 0
++0.01  `test $(nstat -zjs | jq '.kernel.MPTcpExtMPCapableSYNTXDrop') -eq 1`
++0.01  `test $(nstat -zjs | jq '.kernel.MPTcpExtBlackhole') -eq 0`
+
++0.01   close(3) = 0
++0        >  F.  1:1(0)  ack 1             <nop, nop,         TS val 100 ecr 700>
++0.01     <  F.  1:1(0)  ack 2  win 92     <nop, nop,         TS val 700 ecr 100>
++0        >  .   2:2(0)  ack 2             <nop, nop,         TS val 100 ecr 700>
+
+
+// Establish a new MPTCP connection and verify that it uses MPTCP options.
++0.02   socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 4
++0.0    setsockopt(4, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0    getsockopt(4, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
++0.0    fcntl(4, F_GETFL) = 0x2 (flags O_RDWR)
++0.0    fcntl(4, F_SETFL, O_RDWR|O_NONBLOCK) = 0
++0.0    connect(4, ..., ...) = -1  EINPROGRESS (Operation now in progress)
+
++0.0      >  S   0:0(0)                    <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.01     <  S.  0:0(0)  ack 1  win 65535  <mss 1460, sackOK, TS val 700 ecr 100, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey=2]>
++0.0      >   .  1:1(0)  ack 1             <nop, nop,         TS val 100 ecr 700,                mpcapable v1 flags[flag_h] key[ckey, skey] >
+
++0.200  getsockopt(4, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+
+// Check for fallback
++0.0    getsockopt(4, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
++0.01  `test $(nstat -zjs | jq '.kernel.MPTcpExtMPCapableSYNTXDisabled') -eq 0`
