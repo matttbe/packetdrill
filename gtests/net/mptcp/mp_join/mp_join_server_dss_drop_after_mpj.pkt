@@ -1,0 +1,41 @@
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
++0    `../common/multi-ep.sh -e 0`
+
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0  fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
++0    bind(3, ..., ...) = 0
++0    listen(3, 1) = 0
+
+// MP_CAPABLE
++0.0    <  addr[caddr0] > addr[saddr0]  S   0:0(0)         win 65535  <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.0    >                               S.  0:0(0)  ack 1             <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
++0.1    <                                .  1:1(0)  ack 1  win 256    <                                           mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0    accept(3, ..., ...) = 4
+
+// Switch to fully established
++0.0    <                               P.  1:3(2)  ack 1  win 256    <mpcapable v1 flags[flag_h] key[skey, ckey] mpcdatalen 2, nop, nop>
+// MP_CAPABLE carrying data are acked with 64-bit, safer not knowing if the
+// sender will use a DSN on 64-bit or 32-bit. Later we can use the lower 32 bits
++0.0    >                                .  1:1(0)  ack 3             <dss dack8=3 dll=0 nocs>
++0.0  read (4, ..., 2) = 2
+
+// create subflow
++0.1    <  addr[caddr1] > addr[saddr0]  S   0:0(0)         win 65535  <mss 1460, nop, nop, sackOK, nop, wscale 8, mp_join_syn     address_id=1 token=sha256_32(skey)>
++0.0    >                               S.  0:0(0)  ack 1             <mss 1460, nop, nop, sackOK, nop, wscale 8, mp_join_syn_ack address_id=1 sender_hmac=auto>
++0.1    <                                .  1:1(0)  ack 1  win 256                                               <mp_join_ack                  sender_hmac=auto>
+
++0.0    >                                .  1:1(0)  ack 1             <dss dack8=3 nocs>
+
+// From here, a middlebox drop MPTCP options on the joined subflow: expect a reset
++0.1    <                               P.  1:3(2)  ack 1  win 256
++0.0    >                               R.  1:1(0)  ack 3             <mp_reset 6>
+
+// But still OK to receive data on the first path.
++0.2    <  addr[caddr0] > addr[saddr0]   .  3:5(2)  ack 1  win 256  <dss dack8=1   dsn8=3 ssn=3 dll=2 nocs, nop, nop>
++0.0    >  addr[saddr0] > addr[caddr0]   .  1:1(0)  ack 5           <dss dack8=5 nocs>
++0.0  read (4, ..., 2) = 2

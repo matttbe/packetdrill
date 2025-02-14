@@ -1,0 +1,53 @@
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
++0    `../common/client.sh`
+
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0  fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
++0.0  connect(3, ..., ...) = -1  EINPROGRESS (Operation now in progress)
++0.0    >  addr[caddr0] > addr[saddr0]  S   0:0(0)                        <mss 1460, sackOK, TS val 4074410674 ecr 0,          nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.1    <                               S.  0:0(0)      ack 1  win 65535  <mss 1460, nop, nop, sackOK,                         nop, wscale 8, mpcapable v1 flags[flag_h] key[skey=2]>
++0.0    >                                .  1:1(0)      ack 1             <                                                                   mpcapable v1 flags[flag_h] key[ckey, skey]>
+
++0.2  getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
++0.0  fcntl(3, F_SETFL, O_RDWR) = 0   // set back to blocking
+
+// Switch to fully established, get the second IP from the server with an ADD_ADDR (easier)
++0.2  write(3, ..., 2) = 2
++0.0    >                               P.  1:3(2)      ack 1             <                 mpcapable v1 flags[flag_h] key[ckey, skey] mpcdatalen 2, nop, nop>
++0.1    <                                .  1:1(0)      ack 3  win 256    <dss dack8=3   nocs>
++0.1    <                                .  1:1(0)      ack 3  win 256    <add_address addr[saddr1] hmac=auto>
++0.0    >                                .  3:3(0)      ack 1             <add_address addr[saddr1] addr_echo>
+
+// New subflow
++0.0    >               > addr[saddr1]  S   0:0(0)                        <mss 1460, sackOK, TS val 448955294 ecr 0,         nop, wscale 8, mp_join_syn     address_id=0 token=sha256_32(skey)>
++0.01   <                               S.  0:0(0)      ack 1  win 65535  <mss 1460, nop, nop, sackOK,                       nop, wscale 8, mp_join_syn_ack address_id=1 sender_hmac=auto>
++0.0    >                                .  1:1(0)      ack 1             <                                                                 mp_join_ack                  sender_hmac=auto>
+
++0.0    <                                .  1:1(0)      ack 1  win 256    <dss dack8=3   nocs>
+
+// Send data on the first path (easier)
++0.2  write(3, ..., 2) = 2
++0.0    >  addr[caddr0] > addr[saddr0]  P.  3:5(2)      ack 1             <dss dack4=1   dsn8=3 ssn=3 dll=2 nocs, nop, nop>
+
+// From here, a middlebox drop MPTCP options on the joined subflow
++0.1    <  addr[saddr0] > addr[caddr0]   .  1:1(0)      ack 5  win 256
+
+// don't expect the kernel to send a reset: that's OK for the RFC, but it means msk->snd_una has not been moved.
+
+// Reinjection on the same subflow
++0.1    >  addr[caddr0] > addr[saddr0]  P.  5:7(2)      ack 1             <dss dack4=1   dsn8=3 ssn=5 dll=2 nocs, nop, nop>
++0.1    <  addr[saddr0] > addr[caddr0]   .  1:1(0)      ack 5  win 256
+
+// Reception of data without DSS, RST
++0.0    <  addr[saddr0] > addr[caddr0]  P.  1:3(2)  ack 1  win 256
++0.0    >  addr[caddr0] > addr[saddr0]  R.  7:7(0)  ack 3                 <mp_reset 6>
+
+// Reinjection on the other subflow
+// That's what's happening according to a packet trace, but packetdrill is now confused and looked at the wrong subflow: packet is not for expected socket
+//+0.1  >  addr[caddr0] > addr[saddr1]  P.  1:3(2)      ack 1             <dss dack4=1   dsn8=3 ssn=1 dll=2 nocs, nop, nop>
+//+0.01 <  addr[saddr1] > addr[caddr0]   .  1:1(0)      ack 3  win 256    <dss dack8=5   nocs>
