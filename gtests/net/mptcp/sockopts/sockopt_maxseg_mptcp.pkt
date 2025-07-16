@@ -1,0 +1,50 @@
+--tolerance_usecs=100000
+`../common/defaults.sh
+ ethtool -K tun0 gso off tso off
+ ip link set tun0 gso_max_segs 1 # to force dll of 1000
+`
+
++0    `../common/multi-ep.sh -e 0`
+
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0  fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
++0.0  getsockopt(3, SOL_TCP, TCP_MAXSEG, [536], [4]) = 0
+
++0.0  setsockopt(3, SOL_TCP, TCP_MAXSEG, [1028], 4) = 0
++0.0  getsockopt(3, SOL_TCP, TCP_MAXSEG, [1028], [4]) = 0
+
++0.0  bind(3, ..., ...) = 0
++0.0  listen(3, 1) = 0
+
++0.0    <  addr[caddr0] > addr[saddr0]  S   0:0(0)                     win 65535  <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.0    >                               S.  0:0(0)           ack 1                <mss 1028, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
++0.1    <                                .  1:1(0)           ack 1     win 256                                               <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0.0  accept(3, ..., ...) = 4
+
+// Switch to fully established
++0.0    <                               P.  1:3(2)           ack 1     win 256                                               <mpcapable v1 flags[flag_h] key[skey, ckey] mpcdatalen 2, nop, nop>
++0.0    >                                .  1:1(0)           ack 3                <dss dack8=3 dll=0 nocs>
++0.0  read (4, ..., 2) = 2
+
++0.0  getsockopt(4, SOL_TCP, TCP_MAXSEG, [1028], [4]) = 0
++0.0  write(4, ..., 2000) = 2000
+
++0.0    >                                .  1:1001(1000)     ack 3                <dss dack8=3 dsn8=1    ssn=1    dll=1000 nocs, nop, nop>
++0.0    >                               P.  1001:2001(1000)  ack 3                <dss dack8=3 dsn8=1001 ssn=1001 dll=1000 nocs, nop, nop>
++0.1    <                                .  3:3(0)           ack 2001  win 256    <dss dack8=2001 nocs>
+
++0.0  setsockopt(4, SOL_TCP, TCP_MAXSEG, [800], 4) = 0
++0.0  getsockopt(4, SOL_TCP, TCP_MAXSEG, [1028], [4]) = 0
++0.0  write(4, ..., 2000) = 2000
+
++0.0    >                                .  2001:3001(1000)  ack 3                <dss dack8=3 dsn8=2001 ssn=2001 dll=1000 nocs, nop, nop>
++0.0    >                               P.  3001:4001(1000)  ack 3                <dss dack8=3 dsn8=3001 ssn=3001 dll=1000 nocs, nop, nop>
++0.1    <                                .  3:3(0)           ack 4001  win 256    <dss dack8=4001 nocs>
+
+// create subflow: the MSS value in the SYN+ACK will come from the listening socket (fd: 3), not the one changed in the accepted MPTCP connection (fd: 4)
++0.0    <  addr[caddr1] > addr[saddr0]  S   0:0(0)                     win 65535  <mss 1460, nop, nop, sackOK, nop, wscale 8, mp_join_syn     address_id=1 token=sha256_32(skey)>
++0.0    >                               S.  0:0(0)           ack 1                <mss 1028, nop, nop, sackOK, nop, wscale 8, mp_join_syn_ack address_id=1 sender_hmac=auto>
++0.1    <                                .  1:1(0)           ack 1     win 256                                               <mp_join_ack                  sender_hmac=auto>
