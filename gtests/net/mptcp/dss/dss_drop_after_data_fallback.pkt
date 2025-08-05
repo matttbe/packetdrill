@@ -4,6 +4,7 @@
 0.0   socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
 +0    setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
 
++0    `nstat -n`
 +0    bind(3, ..., ...) = 0
 +0    listen(3, 1) = 0
 
@@ -28,3 +29,6 @@
 +0.0    <  P.  501:601(100)     ack 101  win 2048
 // The server should fallback to TCP, not reset: it didn't get a DATA_ACK, nor data for more than the initial window
 +0.0    >   .  101:101(0)       ack 601
+
+// test mibs
++0.1  `test $(nstat -zjs | jq '.kernel.MPTcpExtDssFallback') -eq 1`
