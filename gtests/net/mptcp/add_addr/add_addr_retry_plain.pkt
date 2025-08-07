@@ -2,7 +2,6 @@
 --tolerance_usecs=400000
 `../common/defaults.sh`
 
-+0     `sysctl -wq net.mptcp.add_addr_timeout=1`
 +0     `../common/multi-ep.sh -e 1 -m signal`
 
 +0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
@@ -18,9 +17,10 @@
 // ADD_ADDR is sent directly (>= 5.12), not after first data (< 5.12)
 +0       >   .  1:1(0)        ack 1           <add_address address_id=1  addr[saddr0] hmac=auto>
 
-// Retransmitted after one second
-+1.0     >   .  1:1(0)        ack 1           <add_address address_id=1  addr[saddr0] hmac=auto>
-+1.0     >   .  1:1(0)        ack 1           <add_address address_id=1  addr[saddr0] hmac=auto>
+// After https://github.com/multipath-tcp/mptcp_net-next/issues/576, it is
+// retransmitted after one RTO, with exponential back off.
++0.211   >   .  1:1(0)        ack 1           <add_address address_id=1  addr[saddr0] hmac=auto>
++0.422   >   .  1:1(0)        ack 1           <add_address address_id=1  addr[saddr0] hmac=auto>
 
 // send echo with correct id, expect no retry
 +0       <   .  1:1(0)        ack 1  win 257  <add_address address_id=1  addr[saddr0] addr_echo>
