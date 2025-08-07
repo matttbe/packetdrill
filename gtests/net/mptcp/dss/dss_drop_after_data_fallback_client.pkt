@@ -1,0 +1,25 @@
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
++0    `../common/client.sh`
+
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0  fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
++0.0  `nstat -n`
++0.0  connect(3, ..., ...) = -1  EINPROGRESS (Operation now in progress)
++0.0    >  S   0:0(0)                        <mss 1460, sackOK, TS val 4074410674 ecr 0,          nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.1    <  S.  0:0(0)      ack 1  win 65535  <mss 1460, sackOK, TS val 4074410674 ecr 4074410674, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey=2]>
++0.0    >   .  1:1(0)      ack 1             <nop, nop,         TS val 4074410674 ecr 4074410674,                mpcapable v1 flags[flag_h] key[ckey, skey]>
+
++0.2  getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
++0.0  fcntl(3, F_SETFL, O_RDWR) = 0   // set back to blocking
+
++0.1    <  P.  1:3(2)      ack 1  win 256    <nop, nop, TS val 4074418292 ecr 4074410674>
++0.0    >   .  1:1(0)      ack 3             <nop, nop, TS val 4074411075 ecr 4074418292>
+
+//check for fallback
++0.0   getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [0], [4]) = 0
++0.01  `test $(nstat -zjs | jq '.kernel.MPTcpExtMPCapableDataFallback') -eq 1`
