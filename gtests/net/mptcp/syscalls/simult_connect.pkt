@@ -1,0 +1,17 @@
+// In the simultaneous initiation, MPTCP should fallback to TCP.
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
+0   socket(..., SOCK_STREAM|SOCK_NONBLOCK, IPPROTO_MPTCP) = 3
++0  `nstat -n`
++0  connect(3, ..., ...) = -1 EINPROGRESS (Operation now in progress)
+
++0  >  S  0:0(0)                    <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0  <  S  0:0(0)         win 1000   <mss 1460, sackOK, TS val 407 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0  >  S. 0:0(0)  ack 1             <mss 1460, sackOK, TS val 330 ecr 407, nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0  <  S. 0:0(0)  ack 1  win 65535  <mss 1460, sackOK, TS val 507 ecr 100, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey=2]>
++0  >   . 1:1(0)  ack 1             <nop,      nop,    TS val 430 ecr 507, nop, nop, sack 0:1>
+
+// check for fallback
++0  getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [0], [4]) = 0
++0  `test $(nstat -zjs | jq '.kernel.MPTcpExtSimultConnectFallback') -eq 1`
