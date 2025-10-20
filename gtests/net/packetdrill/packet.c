@@ -33,6 +33,7 @@
 #include "ip_packet.h"
 #include "logging.h"
 #include "mpls_packet.h"
+#include "tcp_options_iterator.h"
 
 
 /* Info for all types of header we support. */
@@ -267,10 +268,79 @@ struct header_type_info *header_type_info(enum header_t header_type)
 	return &header_types[header_type];
 }
 
+static struct tcp_option *find_dss_option(struct packet *packet, char **error)
+{
+	struct tcp_options_iterator iter;
+	struct tcp_option *opt;
+
+	opt = tcp_options_begin(packet, &iter);
+	while (opt != NULL) {
+		if (opt->kind == TCPOPT_MPTCP &&
+		    opt->data.dss.subtype == DSS_SUBTYPE &&
+		    opt->data.dss.flag_M == 1)
+			return opt;
+
+		opt = tcp_options_next(&iter, error);
+	}
+	return NULL;
+}
+
+static void aggregate_tcp_options(struct packet *packet,
+				  struct packet *first_packet,
+				  char **error)
+{
+	struct tcp_option *d_opt, *s_opt;
+	struct dsn *d_dsn, *s_dsn;
+	u16 delta;
+
+	d_opt = find_dss_option(packet, error);
+	s_opt = find_dss_option(first_packet, error);
+
+	if (!d_opt && !s_opt)
+		return;
+
+	if (!d_opt || !s_opt ||
+	    d_opt->data.dss.flag_m != s_opt->data.dss.flag_m ||
+	    d_opt->data.dss.flag_a != s_opt->data.dss.flag_a ||
+	    d_opt->data.dss.flag_A != s_opt->data.dss.flag_A) {
+		asprintf(error, "MPTCP dss option mismatch");
+		return;
+	}
+
+	if (s_opt->data.dss.flag_a && s_opt->data.dss.flag_A) {
+		d_dsn = (struct dsn*)((u64*)&d_opt->data.dss.dack_dsn + 1);
+		s_dsn = (struct dsn*)((u64*)&s_opt->data.dss.dack_dsn + 1);
+	} else if (s_opt->data.dss.flag_A) {
+		d_dsn = (struct dsn*)((u32*)&d_opt->data.dss.dack_dsn + 1);
+		s_dsn = (struct dsn*)((u32*)&s_opt->data.dss.dack_dsn + 1);
+	} else {
+		d_dsn = &d_opt->data.dss.dsn;
+		s_dsn = &s_opt->data.dss.dsn;
+	}
+
+	if (d_opt->data.dss.flag_m) {
+		delta = be64toh(d_dsn->dsn8) - be64toh(s_dsn->dsn8);
+
+		d_dsn->wo_cs.ssn = s_dsn->wo_cs.ssn;
+		d_dsn->wo_cs.dll = htons(ntohs(d_dsn->wo_cs.dll) + delta);
+		d_dsn->dsn8 = s_dsn->dsn8;
+	} else {
+		u32 *d_ssn = (u32*)d_dsn + 1;
+		u32 *s_ssn = (u32*)s_dsn + 1;
+		u16 *d_dll = (u16*)d_dsn + 2;
+
+		delta = be32toh(d_dsn->dsn4) - be32toh(s_dsn->dsn4);
+
+		*d_ssn = *s_ssn;
+		*d_dll = htons(ntohs(*d_dll) + delta);
+		d_dsn->dsn4 = s_dsn->dsn4;
+	}
+}
+
 /* Aggregate a list of input packets into a single output packet. */
 struct packet *aggregate_packets(const struct packet_list *head,
 				 const struct packet_list *tail,
-				 int payload_size)
+				 int payload_size, char **error)
 {
 	int i;
 	/* Copy the headers from the last source packet. */
@@ -319,6 +389,9 @@ struct packet *aggregate_packets(const struct packet_list *head,
 			assert(first_packet->tcp != NULL);
 			packet->tcp->seq = first_packet->tcp->seq;
 			packet->tcp->cwr = first_packet->tcp->cwr;
+
+			/* MPTCP DSS options needs similar care*/
+			aggregate_tcp_options(packet, first_packet, error);
 		}
 	}
 	packet_finish_encapsulation_headers(packet);

@@ -2332,7 +2332,8 @@ static int do_outbound_script_packet(
 		}
 		live_packet = aggregate_packets(sniffed_packets_start,
 						sniffed_packets_end,
-						sniffed_payload_len);
+						sniffed_payload_len,
+						error);
 		if (DEBUG_LOGGING) {
 			char *debug = NULL;
 			add_packet_dump(&debug, "live", live_packet,

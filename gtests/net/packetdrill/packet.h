@@ -164,7 +164,7 @@ extern struct packet *packet_encapsulate(struct packet *outer,
  */
 extern struct packet *aggregate_packets(const struct packet_list *head,
 					const struct packet_list *tail,
-					int payload_size);
+					int payload_size, char **error);
 
 /* Encapsulate a packet and free the original outer and inner packets. */
 static inline struct packet *packet_encapsulate_and_free(struct packet *outer,
