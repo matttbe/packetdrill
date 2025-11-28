@@ -1,0 +1,30 @@
+// connect() function, connection initiated by the kernel
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
+0.0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0    setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0    getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [1], [4]) = 0
++0.0    fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0    fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
+// Establish connection and verify that there was no error.
+
++0.0    connect(3, ..., ...) = -1  EINPROGRESS (Operation now in progress)
++0.0      >  S   0:0(0)                    <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.1      <  S.  0:0(0)  ack 1  win 65535  <mss 1460, sackOK, TS val 700 ecr 100>
++0.0      >   .  1:1(0)  ack 1             <nop, nop,         TS val 100 ecr 700>
+
++0.200  getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
++0.200  fcntl(3, F_SETFL, O_RDWR) = 0   // set back to blocking
+
+// Check for fallback
++0.0    getsockopt(3, SOL_TCP, TCP_IS_MPTCP, [0], [4]) = 0
+
+// ensure that traffic plane is functional and does not use DSS
++0.0    shutdown(3, SHUT_WR) = 0
++0.0      >  F.  1:1(0)         ack 1              <nop, nop, TS val 100 ecr 700>
++0.0      <  F.  1:1011(1010)   ack 2     win 257  <nop, nop, TS val 700 ecr 100>
++0.0      >   .  2:2(0)         ack 1012           <nop, nop, TS val 100 ecr 700>
++0.0    read(3, ..., 1500) = 1010
++0.0    `! ss -Mtn | grep FIN_WAIT_2`
