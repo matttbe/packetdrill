@@ -11,7 +11,7 @@ sysctl -w net.ipv4.tcp_wmem="4096 50000 4194304"
 
 +0        <  S   0:0(0)                   win 8000   <mss 1024, sackOK, nop, nop, nop, wscale 0, mpcapable v1 flags[flag_h] nokey>
 +0        >  S.  0:0(0)        ack 1                 <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
-+0.01     <   .  1:1(0)        ack 1      win 8000                                              <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0.1      <   .  1:1(0)        ack 1      win 8000                                              <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
 +0     accept(3, ..., ...) = 4
 
 // Set not-sent lowat to 32K.
@@ -32,23 +32,23 @@ sysctl -w net.ipv4.tcp_wmem="4096 50000 4194304"
 
 // The ack does not open up enough space to send EPOLLOUT to the user.
 +0.0      >  P.  1:4001(4000)       ack 1               <dss dack4=1 dsn8=1      ssn=1     dll=4000  nocs, nop,nop>
-+0.0      >  P.  4001:8001(4000)    ack 1               <dss dack4=1 dsn8=4001   ssn=4001  dll=4000  nocs, nop,nop>
++0.0~+0.1 >  P.  4001:8001(4000)    ack 1               <dss dack4=1 dsn8=4001   ssn=4001  dll=4000  nocs, nop,nop>
 
 // Now epoll_wait should not return any event because there is no space.
 +0.0   epoll_wait(5, {events=0, ptr=0}, 1, 0) = 0
 
-+0.0      <   .  1:1(0)             ack 8001  win 8000  <dss dack8=8001                              nocs>
++0.05     <   .  1:1(0)             ack 8001  win 8000  <dss dack8=8001                              nocs>
 +0.0      >  P. 8001:12001(4000)    ack 1               <dss dack4=1 dsn8=8001   ssn=8001  dll=4000  nocs, nop, nop>
-// Packetdrill might try to coalesce packets here, but breaking MPTCP options: test might fail, see commit msg
-+0.0      >  P. 12001:16001(4000)   ack 1               <dss dack4=1 dsn8=12001  ssn=12001 dll=4000  nocs, nop, nop>
+// Packetdrill might try to coalesce packets here
++0.0~+0.1 >  P. 12001:16001(4000)   ack 1               <dss dack4=1 dsn8=12001  ssn=12001 dll=4000  nocs, nop, nop>
 
 // Still blocking: 24K not sent
 +0.0   epoll_wait(5, {events=0, ptr=0}, 1, 0) = 0
 
 // Now this ack opens up substantial space and we will send EPOLLOUT.
-+0.0      <    .  1:1(0)            ack 16001 win 8000  <dss dack8=16001                             nocs>
++0.01     <    .  1:1(0)            ack 16001 win 8000  <dss dack8=16001                             nocs>
 +0.0      >   P.  16001:20001(4000) ack 1               <dss dack4=1 dsn8=16001  ssn=16001 dll=4000  nocs, nop, nop>
-+0.0      >   P.  20001:24001(4000) ack 1               <dss dack4=1 dsn8=20001  ssn=20001 dll=4000  nocs, nop, nop>
++0.0~+0.1 >   P.  20001:24001(4000) ack 1               <dss dack4=1 dsn8=20001  ssn=20001 dll=4000  nocs, nop, nop>
 +0.0   epoll_wait(5, {events=EPOLLOUT, fd=4}, 1, 0) = 1
 
 // EPOLLET prevents a second EPOLLOUT.
