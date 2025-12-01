@@ -8,8 +8,8 @@
 
 +0  >  S  0:0(0)                    <mss 1460, sackOK, TS val 100 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
 +0  <  S  0:0(0)         win 1000   <mss 1460, sackOK, TS val 407 ecr 0,   nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
-+0  >  S. 0:0(0)  ack 1             <mss 1460, sackOK, TS val 330 ecr 407, nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
-+0  <  S. 0:0(0)  ack 1  win 65535  <mss 1460, sackOK, TS val 507 ecr 100, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey=2]>
++0  >  S. 0:0(0)  ack 1             <mss 1460, sackOK, TS val 330 ecr 407, nop, wscale 8>
++0  <  S. 0:0(0)  ack 1  win 65535  <mss 1460, sackOK, TS val 507 ecr 100, nop, wscale 8>
 +0  >   . 1:1(0)  ack 1             <nop,      nop,    TS val 430 ecr 507, nop, nop, sack 0:1>
 
 // check for fallback
