@@ -28,7 +28,8 @@
 // Here, `ss -Mt` will report one "tcp ESTAB" and one "mptcp LAST-ACK"
 +0     `ss -Mn | grep -q LAST-ACK`
 
-// One more with no time: the prev cmd can be slow and cause retransmit
+// Two more with no time: the prev cmd can be slow and cause retransmits
+*        >   .  1:1(0)  ack 1             <dss dack4=2 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
 *        >   .  1:1(0)  ack 1             <dss dack4=2 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
 
 // ACK the data_fin
