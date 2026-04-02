@@ -1,0 +1,44 @@
+// Test MPTCP MSG_EOR prevents coalescing
+// derived from sockopts/sockopt_cork_nodelay.pkt
+--tolerance_usecs=100000 --strict_segments
+`../common/defaults.sh`
+
+// Server setup with TCP_CORK
++0.0   socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0   setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0   setsockopt(3, SOL_TCP, TCP_CORK, [1], 4) = 0
+
++0     bind(3, ..., ...) = 0
++0     listen(3, 1) = 0
+
++0.0     <  S   0:0(0)                win 65535  <mss 1460, sackOK, TS val 100 ecr 0, nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.0     >  S.  0:0(0)       ack 1               <mss 1460, sackOK, TS val 100 ecr 100, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
++0.1     <   .  1:1(0)       ack 1    win 256    <nop, nop, TS val 100 ecr 100, mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0     accept(3, ..., ...) = 4
+
+// Test 1: WITH MSG_EOR
+// Send two chunks while corked: first with MSG_EOR, second without
++0.0   send(4, ..., 80, MSG_EOR) = 80
++0.0   send(4, ..., 90, 0) = 90
++0.0   send(4, ..., 100, 0) = 100
+
+// Clear TCP_CORK - should push as TWO separate packets due to MSG_EOR
++0.0   setsockopt(4, SOL_TCP, TCP_CORK, [0], 4) = 0
+
++0.00    >  P.  1:81(80)     ack 1               <nop, nop, TS val 100 ecr 100, dss dack4=1  dsn8=1   ssn=1   dll=80  nocs, nop, nop>
++0.05    <   .  1:1(0)       ack 81  win 256     <nop, nop, TS val 100 ecr 100, dss dack4=81 nocs>
++0.00    >  P.  81:271(190)  ack 1               <nop, nop, TS val 100 ecr 100, dss dack4=1  dsn8=81  ssn=81  dll=190  nocs, nop, nop>
++0.05    <   .  1:1(0)       ack 271  win 256    <nop, nop, TS val 100 ecr 100, dss dack4=271 nocs>
+
+
+// Test 2: WITHOUT MSG_EOR
+// Set CORK again
++0.2   setsockopt(4, SOL_TCP, TCP_CORK, [1], 4) = 0
++0.0   send(4, ..., 80, 0) = 80
++0.0   send(4, ..., 90, 0) = 90
++0.0   send(4, ..., 100, 0) = 100
+
+// Clear TCP_CORK - should push as ONE coalesced packet (no MSG_EOR)
++0.0   setsockopt(4, SOL_TCP, TCP_CORK, [0], 4) = 0
++0.0     >  P.  271:541(270) ack 1               <nop, nop, TS val 100 ecr 100, dss dack4=1  dsn8=271 ssn=271 dll=270 nocs, nop, nop>
++0.05    <   .  1:1(0)       ack 541  win 256    <nop, nop, TS val 100 ecr 100, dss dack4=541 nocs>
