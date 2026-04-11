@@ -1,0 +1,34 @@
+--tolerance_usecs=100000
+
+`../common/defaults.sh
+sysctl -w net.ipv4.tcp_wmem="1024 1024 1048576"`
+
+// Create MPTCP server socket
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0  fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
++0    bind(3, ..., ...) = 0
++0    listen(3, 1) = 0
+
+// Three-way handshake with MP_CAPABLE
++0.0    <  addr[caddr0] > addr[saddr0]  S   0:0(0)         win 65535  <mss 1460, sackOK, TS val 4074410674 ecr 0,          nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0.0    >                               S.  0:0(0)  ack 1             <mss 1460, sackOK, TS val 4074410674 ecr 4074410674, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
++0.1    <                                .  1:1(0)  ack 1  win 256    <nop, nop,         TS val 4074410674 ecr 4074410674,                mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0    accept(3, ..., ...) = 4
+
+// Check the sk_sndbuf
++0.0   `SF_SNDBUF=$(ss -tm  | grep -oP 'tb\K\d+' | tr -d ' ')
+        # in '__mptcp_sync_sndbuf': EXPECTED = tcp_wmem[0] + first->sk_sndbuf
+        EXPECTED=$((SF_SNDBUF + 1024))
+        REAL=$(ss -Mm  | grep -oP 'tb\K\d+')
+
+        if [ "$EXPECTED" != "$REAL" ]; then
+                echo "ERROR: expected ${EXPECTED}, got ${REAL}" >&2
+		exit 1
+        fi`
+
+
+// Clean close
++0     close(4) = 0
