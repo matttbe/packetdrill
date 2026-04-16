@@ -1,0 +1,37 @@
+--tolerance_usecs=100000
+
+`../common/defaults.sh`
+
+// Create MPTCP server socket
++0.0  socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0.0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.0  fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)
++0.0  fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0
+
++0    bind(3, ..., ...) = 0
++0    listen(3, 1) = 0
+
+// Three-way handshake with MP_CAPABLE
++0      <  S   0:0(0)         win 65535  <mss 1460, sackOK, nop, nop, nop, wscale 8, mpcapable v1 flags[flag_h] nokey>
++0      >  S.  0:0(0)  ack 1             <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey]>
++0.01   <   .  1:1(0)  ack 1  win 256                                               <mpcapable v1 flags[flag_h] key[ckey=2, skey]>
++0    accept(3, ..., ...) = 4
+
+// Record tcpi_rcv_space (rcv_ssthresh) before SO_RCVBUF.
+// With default tcp_rmem[2], this should be a large value.
++0.0  %{ assert tcpi_rcv_ssthresh == 268552, tcpi_rcv_space }%
+
+// Set SO_RCVBUF to a small value:
+//   kernel doubles 8192 -> sk_rcvbuf = 16384
+//   tcp_win_from_space(16384) = 16384 * 128 >> 8 = 8192
+//   tcp_set_window_clamp(sk, 8192) -> shrinks rcv_ssthresh to <= 8192
++0.0  setsockopt(4, SOL_SOCKET, SO_RCVBUF, [8192], 4) = 0
+
+// After SO_RCVBUF shrink, rcv_ssthresh must be <= new window_clamp (8192).
+// Without the fix: window_clamp not updated, rcv_ssthresh stays at the old
+// large value, assert fails.
+// With the fix: rcv_ssthresh <= 8192, assert passes.
++0.0  %{ assert tcpi_rcv_ssthresh == 8192, tcpi_rcv_space }%
+
+// Clean close
++0     close(4) = 0
