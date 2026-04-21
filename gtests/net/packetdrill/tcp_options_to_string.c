@@ -26,6 +26,9 @@
 
 #include "tcp_options_iterator.h"
 
+/* Internal code to print all options. */
+#define  ALL_TCP_OPTIONS  (-1)
+
 /* If the MD5 digest option is in the valid range of sizes, print the MD5
  * option and digest and return STATUS_OK. Otherwise, return STATUS_ERR.
  */
@@ -196,8 +199,42 @@ int print_dss_subtype(FILE *s, struct tcp_option *option){
 	if( option->data.dss.flag_F) fprintf(s, "F");
 	return 0;
 }
-int tcp_options_to_string(struct packet *packet,
-				  char **ascii_string, char **error)
+
+char *tcp_accecn_option_field_label[2][MAX_TCP_ACCECN_FIELDS] = {
+	{ "e0b", "ceb", "e1b" },
+	{ "e1b", "ceb", "e0b" }
+};
+
+static int tcp_accecn_option_to_string(FILE *s, struct tcp_option *option)
+{
+	int order;
+
+	if (option->length < TCPOLEN_ACCECN_BASE)
+		return STATUS_ERR;
+
+	int field_bytes = option->length - TCPOLEN_ACCECN_BASE;
+	if ((field_bytes < 0) ||
+	    (field_bytes >
+	     MAX_TCP_ACCECN_FIELDS * sizeof(struct accecn_field)))
+		return STATUS_ERR;
+
+	fprintf(s, "ECN");
+	order = option->kind == TCPOPT_ACCECN0 ? 0 : 1;
+
+	int i;
+	for (i = 0; i < MAX_TCP_ACCECN_FIELDS; ++i) {
+		if (field_bytes < sizeof(struct accecn_field))
+			break;
+		fprintf(s, " %s %u", tcp_accecn_option_field_label[order][i],
+			ntohl(option->data.accecn.field[i].bytes) >> 8);
+		field_bytes -= sizeof(struct accecn_field);
+	}
+	return STATUS_OK;
+}
+
+int tcp_option_info_to_string(struct packet *packet,
+			      int desired_index,
+			      char **ascii_string, char **error)
 {
 	int result = STATUS_ERR;	/* return value */
 	size_t size = 0;
@@ -210,9 +247,17 @@ int tcp_options_to_string(struct packet *packet,
 	char src_string[ADDR_STR_LEN];
 
 	for (option = tcp_options_begin(packet, &iter);
-	     option != NULL; option = tcp_options_next(&iter, error)) {
-		if (index > 0)
+	     option != NULL; option = tcp_options_next(&iter, error), ++index) {
+		if (desired_index == ALL_TCP_OPTIONS &&
+		    index > 0)
 			fputc(',', s);
+
+		/* If the caller just wants the string representation of
+		 * one particular option, ensure we return just that one.
+		 */
+		if (desired_index != ALL_TCP_OPTIONS &&
+		    index != desired_index)
+			continue;
 
 		switch (option->kind) {
 		case TCPOPT_EOL:
@@ -266,13 +311,19 @@ int tcp_options_to_string(struct packet *packet,
 			tcp_fast_open_option_to_string(s, option, false);
 			break;
 
+		case TCPOPT_ACCECN0:
+		case TCPOPT_ACCECN1:
+			if (!tcp_accecn_option_to_string(s, option))
+				break;
+			asprintf(error, "invalid ECN option");
+			goto out;
+
 		case TCPOPT_EXP:
-			if (tcp_fast_open_option_to_string(s, option, true)) {
-				asprintf(error,
-					 "unknown experimental option");
-				goto out;
-			}
-			break;
+			if (!tcp_fast_open_option_to_string(s, option, true))
+				break;
+
+			asprintf(error, "unknown experimental option");
+			goto out;
 	case TCPOPT_MPTCP:
 		switch (option->data.mp_capable.subtype){
 		case MP_CAPABLE_SUBTYPE:
@@ -488,7 +539,6 @@ int tcp_options_to_string(struct packet *packet,
 				 option->kind);
 			goto out;
 		}
-		++index;
 	}
 	if (*error != NULL)  /* bogus TCP options prevented iteration */
 		goto out;
@@ -499,4 +549,11 @@ out:
 	fclose(s);
 	return result;
 
+}
+
+int tcp_options_to_string(struct packet *packet,
+			  char **ascii_string, char **error)
+{
+	return tcp_option_info_to_string(packet, ALL_TCP_OPTIONS,
+					 ascii_string, error);
 }

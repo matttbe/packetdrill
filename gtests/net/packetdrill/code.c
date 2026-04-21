@@ -200,6 +200,30 @@ static void write_tcp_info(struct code_state *code,
 	emit_var(code, "tcpi_bytes_retrans",	info->tcpi_bytes_retrans);
 	emit_var(code, "tcpi_dsack_dups",	info->tcpi_dsack_dups);
 	emit_var(code, "tcpi_reord_seen",	info->tcpi_reord_seen);
+	emit_var(code, "tcpi_rcv_ooopack",      info->tcpi_rcv_ooopack);
+	emit_var(code, "tcpi_snd_wnd",		info->tcpi_snd_wnd);
+	emit_var(code, "tcpi_rcv_wnd",		info->tcpi_rcv_wnd);
+	emit_var(code, "tcpi_rehash",		info->tcpi_rehash);
+	emit_var(code, "tcpi_total_rto",	info->tcpi_total_rto);
+	emit_var(code, "tcpi_total_rto_recoveries", info->tcpi_total_rto_recoveries);
+	emit_var(code, "tcpi_total_rto_time",	info->tcpi_total_rto_time);
+	emit_var(code, "tcpi_ecn_mode",		info->tcpi_ecn_mode);
+	emit_var(code, "tcpi_accecn_opt_seen",	info->tcpi_accecn_opt_seen);
+	emit_var(code, "tcpi_accecn_fail_mode",	info->tcpi_accecn_fail_mode);
+	emit_var(code, "tcpi_options2",		info->tcpi_options2);
+	emit_var(code, "tcpi_received_ce",	info->tcpi_received_ce);
+	emit_var(code, "tcpi_delivered_e1_bytes",
+			info->tcpi_delivered_e1_bytes);
+	emit_var(code, "tcpi_delivered_e0_bytes",
+			info->tcpi_delivered_e0_bytes);
+	emit_var(code, "tcpi_delivered_ce_bytes",
+			info->tcpi_delivered_ce_bytes);
+	emit_var(code, "tcpi_received_e1_bytes",
+			info->tcpi_received_e1_bytes);
+	emit_var(code, "tcpi_received_e0_bytes",
+			info->tcpi_received_e0_bytes);
+	emit_var(code, "tcpi_received_ce_bytes",
+			info->tcpi_received_ce_bytes);
 
 	emit_var_end(code);
 }

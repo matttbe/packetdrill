@@ -303,7 +303,7 @@ def ParseArgs():
                     help='exclusively run tests using IPv4 addresses')
   args.add_argument('-6', '--ipv6', action='store_true',
                     help='exclusively run tests using IPv6 addresses')
-  args.add_argument('-m', '--ipv4mappedv6', action='store_true',
+  args.add_argument('--ipv4mappedv6', action='store_true',
                     help='exclusively run tests using IPv4-mapped-v6 addresses')
   args.add_argument('-c', '--capture', metavar='DIR',
                     help='capture packets in the specified directory')
@@ -323,7 +323,7 @@ def ParseArgs():
                     help="can be repeated to run packetdrill with -v")
   parsed = vars(args.parse_args())
 
-  # if -4, -6 and/or -m are set, only run those set. Otherwise, run all of them
+  # if -4, -6 or v4mapped are set, only run those sets. Otherwise, run them all.
   if not parsed['ipv4'] and not parsed['ipv6'] and not parsed['ipv4mappedv6']:
     parsed['ipv4'] = parsed['ipv6'] = parsed['ipv4mappedv6'] = True
 

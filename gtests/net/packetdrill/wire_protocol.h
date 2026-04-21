@@ -34,7 +34,8 @@ enum wire_op_t {
 	WIRE_SCRIPT_PATH,	/* "here's the path of the script" */
 	WIRE_SCRIPT,		/* "here's the script we're going to start" */
 	WIRE_HARDWARE_ADDR,	/* "here's my ethernet MAC address" */
-	WIRE_IP_ADDR,		/* "here's the client live_local_ip_string */
+	WIRE_LIVE_LOCAL_IP,	/* "here's the client live_local_ip_string */
+	WIRE_LIVE_REMOTE_IP,	/* "here's the live_remote_ip_string to use */
 	WIRE_SERVER_READY,	/* "server ready to start script execution" */
 	WIRE_CLIENT_STARTING,	/* "i'm starting script execution... now!" */
 	WIRE_PACKETS_START,	/* "please start handling packet events" */

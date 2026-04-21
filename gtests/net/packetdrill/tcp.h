@@ -107,11 +107,32 @@
 #define TCPOPT_MD5SIG		19	/* MD5 Signature (RFC2385) */
 #define TCPOLEN_MD5SIG		18
 #define TCPOLEN_MD5_BASE	2
-#define TCPOPT_FASTOPEN		34
 #define TCPOPT_MPTCP		30
+#define TCPOPT_FASTOPEN		34
+#define TCPOPT_ACCECN0		172	/* 0xAC: Accurate ECN Order 0 */
+#define TCPOPT_ACCECN1		174	/* 0xAE: Accurate ECN Order 1 */
+#define TCPOLEN_ACCECN_BASE	2
 #define TCPOPT_EXP		254	/* Experimental */
 
 #define TCP_MD5_DIGEST_LEN	16	/* bytes in RFC2385 TCP MD5 digest */
+
+/* Values for tcpi_ecn_mode after negotiation */
+#define TCPI_ECN_MODE_DISABLED		0x0
+#define TCPI_ECN_MODE_RFC3168		0x1
+#define TCPI_ECN_MODE_ACCECN		0x2
+#define TCPI_ECN_MODE_PENDING		0x3
+
+/* Values for accecn_opt_seen */
+#define TCP_ACCECN_OPT_NOT_SEEN		0x0
+#define TCP_ACCECN_OPT_EMPTY_SEEN	0x1
+#define TCP_ACCECN_OPT_COUNTER_SEEN	0x2
+#define TCP_ACCECN_OPT_FAIL_SEEN	0x3
+
+/* Values for accecn_fail_mode */
+#define TCP_ACCECN_ACE_FAIL_SEND	BIT(0)
+#define TCP_ACCECN_ACE_FAIL_RECV	BIT(1)
+#define TCP_ACCECN_OPT_FAIL_SEND	BIT(2)
+#define TCP_ACCECN_OPT_FAIL_RECV	BIT(3)
 
 /* A portable TCP header definition (Linux and *BSD use different names). */
 struct tcp {
@@ -220,6 +241,40 @@ struct _tcp_info {
 	__u64	tcpi_bytes_retrans;  /* RFC4898 tcpEStatsPerfOctetsRetrans */
 	__u32	tcpi_dsack_dups;     /* RFC4898 tcpEStatsStackDSACKDups */
 	__u32	tcpi_reord_seen;     /* reordering events seen */
+
+	__u32	tcpi_rcv_ooopack;    /* Out-of-order packets received */
+
+	__u32	tcpi_snd_wnd;	     /* peer's advertised receive window after
+				      * scaling (bytes)
+				      */
+	__u32	tcpi_rcv_wnd;	     /* local advertised receive window after
+				      * scaling (bytes)
+				      */
+
+	__u32   tcpi_rehash;         /* PLB or timeout triggered rehash attempts */
+
+	__u16	tcpi_total_rto;	/* Total number of RTO timeouts, including
+				 * SYN/SYN-ACK and recurring timeouts.
+				 */
+	__u16	tcpi_total_rto_recoveries;	/* Total number of RTO
+						 * recoveries, including any
+						 * unfinished recovery.
+						 */
+	__u32	tcpi_total_rto_time;	/* Total time spent in RTO recoveries
+					 * in milliseconds, including any
+					 * unfinished recovery.
+					 */
+	__u32	tcpi_received_ce;    /* # of CE marked segments received */
+	__u32	tcpi_delivered_e1_bytes;  /* Accurate ECN byte counters */
+	__u32	tcpi_delivered_e0_bytes;
+	__u32	tcpi_delivered_ce_bytes;
+	__u32	tcpi_received_e1_bytes;
+	__u32	tcpi_received_e0_bytes;
+	__u32	tcpi_received_ce_bytes;
+	__u32	tcpi_ecn_mode:2,
+		tcpi_accecn_opt_seen:2,
+		tcpi_accecn_fail_mode:4,
+		tcpi_options2:24;
 };
 
 /* netlink attributes types for SCM_TIMESTAMPING_OPT_STATS */
