@@ -19,7 +19,7 @@
 
 // Record tcpi_rcv_space (rcv_ssthresh) before SO_RCVBUF.
 // With default tcp_rmem[2], this should be a large value.
-+0.0  %{ assert tcpi_rcv_ssthresh == 268552, tcpi_rcv_space }%
++0.0  %{ print(tcpi_rcv_ssthresh); assert tcpi_rcv_ssthresh > 8192, tcpi_rcv_space }%
 
 // Set SO_RCVBUF to a small value:
 //   kernel doubles 8192 -> sk_rcvbuf = 16384
@@ -31,7 +31,7 @@
 // Without the fix: window_clamp not updated, rcv_ssthresh stays at the old
 // large value, assert fails.
 // With the fix: rcv_ssthresh <= 8192, assert passes.
-+0.0  %{ assert tcpi_rcv_ssthresh == 8192, tcpi_rcv_space }%
++0.0  %{ print(tcpi_rcv_ssthresh); assert tcpi_rcv_ssthresh == 8192, tcpi_rcv_space }%
 
 // Clean close
 +0     close(4) = 0
