@@ -7,8 +7,6 @@
 // Add the address to be able to create the listener socket without errors
 +0     `ip -6 addr add 2001:db8::c1a0/32 dev $OPT_LOCAL_DEV`
 +0     `ip -6 mptcp endpoint add 2001:db8::c1a0 port 4321 id 2 signal`
-// Do not drop TCP TS (default behaviour before this sysctl knob)
-+0     `sysctl -q net.mptcp.add_addr_v6_port_drop_ts=0 2>/dev/null || true`
 
 +0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
 +0     setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
@@ -21,8 +19,13 @@
 +0     accept(3, ..., ...) = 4
 
 // ADD_ADDR is sent directly (>= 5.12), not after first data (< 5.12)
-// Not enought space, send a plain ACK instead:
-+0       >   .  1:1(0)        ack 1              <nop, nop, TS val 700 ecr 100, dss dack4=1 nocs>
+// Note: for the moment, it is not possible to send ADD_ADDRv6 + port + TS.
+//// Send a plain ACK instead:
+//+0       >   .  1:1(0)        ack 1              <nop, nop, TS val 700 ecr 100, dss dack4=1 nocs>
+
+// When https://github.com/multipath-tcp/mptcp_net-next/issues/448 will be implemented:
++0       >   .  1:1(0)        ack 1              <add_address address_id=2 addr[ep=inet6_addr("2001:db8::c1a0")] port=4321 hmac=auto, nop, nop>
++0       <   .  1:1(0)        ack 1     win 257  <add_address address_id=2 addr[ep=inet6_addr("2001:db8::c1a0")] port=4321 addr_echo, nop, nop>
 
 // read and ack 1 data segment
 +0.1     <  P.  1:1001(1000)  ack 1     win 450            <TS val 100 ecr 700, dss dack8=1    dsn8=1 ssn=1 dll=1000 nocs>
