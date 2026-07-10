@@ -1,0 +1,22 @@
+// Validate that a data fin without DSS is ignored and don't cause troubles
+--tolerance_usecs=100000
+`../common/defaults.sh`
+
++0     socket(..., SOCK_STREAM, IPPROTO_MPTCP) = 3
++0     setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+
++0     bind(3, ..., ...) = 0
++0     listen(3, 1) = 0
++0.1     <  S   0:0(0)         win 32792  <mss 1000, sackOK, nop, nop, nop, wscale 7, mpcapable v1 flags[flag_h] nokey>
++0       >  S.  0:0(0)  ack 1             <mss 1460, nop, nop, sackOK, nop, wscale 8, mpcapable v1 flags[flag_h] key[skey] >
++0.2     <   .  1:1(0)  ack 1  win 257                                               <mpcapable v1 flags[flag_h] key[ckey=2, skey] >
++0     accept(3, ..., ...) = 4
+
+// the client shutdown its side, sends a fin, but without a dsn
++0.0     <   .  1:1(0)  ack 1  win 450    <dss dack4=1 nocs fin>
+
+// ignored by the receiver.
+
+// server shutdown
++0.5   close(4) = 0
++0       >   .  1:1(0)  ack 1             <dss dack4=1 dsn8=1 ssn=0 dll=1 nocs fin, nop, nop>
